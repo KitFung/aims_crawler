@@ -1,8 +1,14 @@
+# -*- coding: utf-8 -*-
 import re
 from bs4 import BeautifulSoup
 from scrapy.http import Request, FormRequest
 from scrapy.selector import HtmlXPathSelector
 from aims.items import CourseItem
+from aims.common_function import (
+    custom_escape,
+    convert_to_reverse_polish_notation,
+    string_to_element_array
+)
 from logined_spider import LoginedSpider
 
 
@@ -48,24 +54,28 @@ class CourseSpider(LoginedSpider):
         full_header = hxs.select('/html/body/div[5]/form/b[1]/text()')\
                          .extract()
         unit = hxs.select('/html/body/div[5]/form/b[2]/text()').extract()
-        requirement = hxs.select('/html/body/div[5]/form/b[4]/font/text()')\
+        a_requirement = hxs.select('/html/body/div[5]/form/b[4]/font/text()')\
+                           .extract()
+        a_exclusive = hxs.select('/html/body/div[5]/form/b[6]/font/text()')\
                          .extract()
-        exclusive = hxs.select('/html/body/div[5]/form/b[6]/font/text()')\
-                       .extract()
 
         # table = hxs.select('/html/body/div[5]/form/table/tbody').extract()
         # self.log(table)
-
-        if len(requirement) > 0:
-            requirement = requirement[0].replace('&nbsp', '').split(' ')
-        if len(exclusive) > 0:
-            exclusive = exclusive[0].replace('&nbsp', '').split(' ')
-        filter(lambda x: len(x) > 0, requirement)
-        filter(lambda x: len(x) > 0, exclusive)
+        operators = {'and': 1, 'or': 2}
+        requirement_text = custom_escape(a_requirement)
+        requirement_formula = convert_to_reverse_polish_notation(
+                                string_to_element_array(requirement_text),
+                                operators
+                              )
+        exclusive_text = custom_escape(a_exclusive)
+        exclusive_formula = string_to_element_array(exclusive_text)
 
         item = CourseItem()
         item['full_header'] = full_header[0].replace('Course : ', '')
+        item['code'] = item['full_header'].split(' ')[0]
         item['unit'] = unit[0].replace('Offering Academic Unit: ', '')
-        item['requirement'] = requirement
-        item['exclusive'] = exclusive
+        item['requirement_text'] = requirement_text
+        item['requirement_formula'] = requirement_formula
+        item['exclusive_text'] = exclusive_text
+        item['exclusive_formula'] = exclusive_formula
         yield item

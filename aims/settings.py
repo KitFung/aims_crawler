@@ -14,6 +14,11 @@ BOT_NAME = 'aims'
 SPIDER_MODULES = ['aims.spiders']
 NEWSPIDER_MODULE = 'aims.spiders'
 
+# Mongodb setting
+MONGODB_SERVER = "localhost"
+MONGODB_PORT = 27017
+MONGODB_DB = "aims"
+MONGODB_COLLECTION = "course"
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = 'aims (+http://www.yourdomain.com)'
@@ -62,9 +67,9 @@ CONCURRENT_REQUESTS = 1
 
 # Configure item pipelines
 # See http://scrapy.readthedocs.org/en/latest/topics/item-pipeline.html
-#ITEM_PIPELINES = {
-#    'aims.pipelines.SomePipeline': 300,
-#}
+ITEM_PIPELINES = {
+   'aims.pipelines.MongoDBPipeline': 300,
+}
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See http://doc.scrapy.org/en/latest/topics/autothrottle.html

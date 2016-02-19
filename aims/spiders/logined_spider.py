@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 import abc
 from scrapy import Spider

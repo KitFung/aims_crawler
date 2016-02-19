@@ -11,13 +11,14 @@ import scrapy
 class AimsItem(scrapy.Item):
     # define the fields for your item here like:
     # name = scrapy.Field()
-    title = scrapy.Field()
-    link = scrapy.Field()
     pass
 
 
 class CourseItem(scrapy.Item):
+    code = scrapy.Field()
     full_header = scrapy.Field()
     unit = scrapy.Field()
-    requirement = scrapy.Field()
-    exclusive = scrapy.Field()
+    requirement_text = scrapy.Field()
+    requirement_formula = scrapy.Field()
+    exclusive_text = scrapy.Field()
+    exclusive_formula = scrapy.Field()
