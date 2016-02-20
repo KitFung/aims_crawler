@@ -22,3 +22,4 @@ class CourseItem(scrapy.Item):
     requirement_formula = scrapy.Field()
     exclusive_text = scrapy.Field()
     exclusive_formula = scrapy.Field()
+    details = scrapy.Field()

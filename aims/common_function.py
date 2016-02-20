@@ -5,8 +5,7 @@ import re
 def custom_escape(s_arr):
     if not s_arr:
         return ''
-    result = s_arr[0].replace('&nbsp', '')
-    return result if len(result) > 0 else ''
+    return s_arr.replace('&nbsp', '').strip()
 
 
 def multiple_replace(string, rep):
