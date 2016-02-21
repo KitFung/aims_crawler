@@ -15,6 +15,10 @@ def str_to_bool(string):
     raise ValueError(string + ' is not a valid boolean value')
 
 
+def str_to_list(string):
+    return [v.strip() for v in string.split(',')]
+
+
 def str_to_date(string):
     return datetime.strptime(string, '%d/%m/%Y')
 
@@ -25,8 +29,7 @@ def str_to_daterange(string):
     """
     if not string:
         return (None, None)
-    dates = string.split('-')
-    dates = map(lambda x: x.replace(' ', ''), dates)
+    dates = [x.replace(' ', '') for x in string.split('-')]
     return (str_to_date(dates[0]), str_to_date(dates[1]))
 
 

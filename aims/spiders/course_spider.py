@@ -7,6 +7,7 @@ from aims.items import CourseItem
 from aims.string_parser import (
     str_to_int,
     str_to_bool,
+    str_to_list,
     str_to_daterange,
     str_to_timerange
 )
@@ -40,9 +41,8 @@ class CourseSpider(LoginedSpider):
         courses = soup.find_all(
             href=re.compile('hwscrssh_cityu.P_DispOneSection'))
         courses_link = \
-            map(lambda x:
-                'https://banweb.cityu.edu.hk/pls/PROD/{}'.format(x['href']),
-                courses)
+            ['https://banweb.cityu.edu.hk/pls/PROD/{}'.format(x['href'])
+             for x in courses]
         return list(set(courses_link))
 
     def parse(self, response):
@@ -55,7 +55,7 @@ class CourseSpider(LoginedSpider):
                 url=course_link,
                 callback=self.parse_course_item)
 
-    def course_table_parse(self, table):
+    def parse_course_table(self, table):
         details = []
         tmp = {}
         # one class one attribute
@@ -69,7 +69,15 @@ class CourseSpider(LoginedSpider):
         sub_attributes = [('Date', str_to_daterange),
                           ('Day', None), ('Time', str_to_timerange),
                           ('Bldg', None), ('Room', None),
-                          ('Instructor', None)]
+                          ('Instructor', str_to_list)]
+        restriction_pair = [('only for Major: ', 'only_majors'),
+                            ('not for Major: ', 'not_allow_majors'),
+                            ('only for College: ', 'only_colleges'),
+                            ('not for College: ', 'not_allow_colleges'),
+                            ('only for Degree: ', 'only_degrees'),
+                            ('not for Degree: ', 'not_allow_degrees'),
+                            ('only for Programme: ', 'only_programmes'),
+                            ('not for Programme: ', 'not_allow_programmes')]
 
         for tr in table:
             if len(tr.xpath('./td')) > 2:
@@ -102,24 +110,11 @@ class CourseSpider(LoginedSpider):
                 tmp['lessons'].append(lessons)
             else:
                 text = tr.xpath('./td[2]/text()').extract_first()
-                if not text.find('only for Major: ') == -1:
-                    pass
-                elif not text.find('not for Major: ') == -1:
-                    pass
-                elif not text.find('only for College: ') == -1:
-                    pass
-                elif not text.find('not for College: ') == -1:
-                    pass
-                elif not text.find('only for Degree: ') == -1:
-                    pass
-                elif not text.find('not for Degree: ') == -1:
-                    pass
-                elif not text.find('only for Programme: ') == -1:
-                    pass
-                elif not text.find('not for Programme: ') == -1:
-                    pass
-                else:
-                    self.log('Unknown format')
+                is_done = False
+                for start_word, key in restriction_pair:
+                    if not text.find(start_word) == -1:
+                        l = text.replace(start_word, '').split(',')
+                        tmp[key] = [t.strip() for t in l]
         details.append(tmp)
         return details
 
@@ -142,7 +137,7 @@ class CourseSpider(LoginedSpider):
             .xpath('//html/body/div[5]/form/table/tr')
 
         table.pop(0)
-        details = self.course_table_parse(table)
+        details = self.parse_course_table(table)
 
         operators = {'and': 1, 'or': 2}
         requirement_text = custom_escape(a_requirement)
