@@ -33,19 +33,26 @@ $ pip install -r requirements.txt #It take a few minutus
 $ mongo
 > use aims
 > aims.createCollection(course)
-> db.course.createIndex('code', 'text')
+> db.course.createIndex({term: 1, code: 1},{unique: true})
 ```
 
 Run!
 ---
 
+Get all possible data
+
 `$ scrapy crawl course`
+
+Get data for specific terms
+
+`$ scrapy crawl course -a terms=201602,201502`
 
 Example Record
 ---
 
-```javascript
+```python
 {'code': u'EF3442',
+ 'term': u'201612'
  'details': [{'Avail': 23,
               'CRN': u'37330',
               'Campus': u'Main Campus',

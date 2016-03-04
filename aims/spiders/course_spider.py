@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import re
+import logging
 from bs4 import BeautifulSoup
 from scrapy.http import Request, FormRequest
 from scrapy.selector import HtmlXPathSelector
@@ -19,22 +20,47 @@ from aims.common_function import (
 from logined_spider import LoginedSpider
 
 
+rootLogger = logging.getLogger()
+fileHandler = logging.FileHandler("error.log")
+fileHandler.setLevel(logging.ERROR)
+rootLogger.addHandler(fileHandler)
+
+
 class CourseSpider(LoginedSpider):
 
     name = 'course'
     download_delay = 2
+    terms = None
+
+    def __init(self, terms_str=''):
+        if terms_str:
+            self.terms = terms_str.split(',')
 
     def request_after_login(self):
-        return Request(
-            url='https://banweb.cityu.edu.hk/pls/PROD/' +
-                'hwscrssh_cityu.P_CrseSearch',
-            callback=self.course_terms_page)
+        if self.terms:
+            return Request(
+                url='https://banweb.cityu.edu.hk/pls/PROD/' +
+                    'hwscrssh_cityu.P_CrseSearch',
+                callback=self.course_terms_page)
+        else:
+            return Request(
+                url='https://banweb.cityu.edu.hk/pls/PROD/' +
+                    'hwscrssh_cityu.P_SelTerm',
+                callback=self.get_all_courses)
+
+    def get_all_courses(self, response):
+        selector = response.selector
+        all_terms = selector.css('option').xpath('@value').extract()
+        self.terms = all_terms
+        return self.request_after_login()
 
     def course_terms_page(self, response):
-        yield FormRequest.from_response(
-                response,
-                formxpath='/html/body/div[5]/form',
-                formdata={'TERM': '201602'})
+        for term in self.terms:
+            yield FormRequest.from_response(
+                    response,
+                    formxpath='/html/body/div[5]/form',
+                    formdata={'TERM': term},
+                    meta={'term': term})
 
     def build_courses_url(self, response):
         soup = BeautifulSoup(response.body, 'lxml')
@@ -43,21 +69,20 @@ class CourseSpider(LoginedSpider):
         courses_link = \
             ['https://banweb.cityu.edu.hk/pls/PROD/{}'.format(x['href'])
              for x in courses]
-        return list(set(courses_link))
+        return set(courses_link)
 
     def parse(self, response):
         courses_link = self.build_courses_url(response)
 
         for idx, course_link in enumerate(courses_link):
-            if idx % 10 == 0:
-                yield self.request_after_login()
             yield Request(
                 url=course_link,
-                callback=self.parse_course_item)
+                callback=self.parse_course_item,
+                meta=response.meta)
 
     def parse_course_table(self, table):
         details = []
-        tmp = {}
+        classes = {}
         # one class one attribute
         attributes = [('CRN', None), ('Section', None),
                       ('Credit', str_to_int), ('Campus', None),
@@ -85,10 +110,10 @@ class CourseSpider(LoginedSpider):
                     tr.xpath('./td[1]/text()').extract_first()
                 ).replace(' ', '')
                 if len(CRN) > 0:
-                    if len(tmp) > 0:
-                        details.append(tmp)
-                    tmp = {}
-                    tmp['lessons'] = []
+                    if len(classes) > 0:
+                        details.append(classes)
+                    classes = {}
+                    classes['lessons'] = []
                     for idx, (key, parser) in enumerate(attributes):
                         value = tr.xpath('./td[{}]/text()'.format(idx + 1))\
                                      .extract_first()
@@ -96,7 +121,7 @@ class CourseSpider(LoginedSpider):
                         value = custom_escape(value)
                         if parser:
                             value = parser(value)
-                        tmp[key] = value
+                        classes[key] = value
                 lessons = {}
                 for idx, (key, parser) in enumerate(sub_attributes):
                     j = num_of_attr + idx + 1
@@ -107,15 +132,15 @@ class CourseSpider(LoginedSpider):
                     if parser:
                         value = parser(value)
                     lessons[key] = value
-                tmp['lessons'].append(lessons)
+                classes['lessons'].append(lessons)
             else:
                 text = tr.xpath('./td[2]/text()').extract_first()
                 is_done = False
                 for start_word, key in restriction_pair:
                     if not text.find(start_word) == -1:
                         l = text.replace(start_word, '').split(',')
-                        tmp[key] = [t.strip() for t in l]
-        details.append(tmp)
+                        classes[key] = [t.strip() for t in l]
+        details.append(classes)
         return details
 
     def parse_course_item(self, response):
@@ -149,6 +174,7 @@ class CourseSpider(LoginedSpider):
         exclusive_formula = string_to_element_array(exclusive_text)
 
         item = CourseItem()
+        item['term'] = response.meta['term']
         item['full_header'] = full_header.replace('Course : ', '')
         item['code'] = item['full_header'].split(' ')[0]
         item['unit'] = unit.replace('Offering Academic Unit: ', '')

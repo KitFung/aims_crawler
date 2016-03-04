@@ -5,7 +5,7 @@
 # See: http://doc.scrapy.org/en/latest/topics/item-pipeline.html
 import pymongo
 
-from scrapy import log
+import logging
 from scrapy.conf import settings
 from scrapy.exceptions import DropItem
 
@@ -33,6 +33,5 @@ class MongoDBPipeline(object):
                 raise DropItem("Missing {0}!".format(data))
         if valid:
             self.collection.insert(dict(item))
-            log.msg("Course data added to MongoDB database!",
-                    level=log.DEBUG, spider=spider)
+            logging.info("Course data added to MongoDB database!")
         return item

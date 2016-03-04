@@ -15,6 +15,7 @@ class AimsItem(scrapy.Item):
 
 
 class CourseItem(scrapy.Item):
+    term = scrapy.Field()
     code = scrapy.Field()
     full_header = scrapy.Field()
     unit = scrapy.Field()
