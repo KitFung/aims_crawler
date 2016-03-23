@@ -7,6 +7,7 @@ from scrapy.selector import HtmlXPathSelector
 from aims.items import CourseItem
 from aims.string_parser import (
     str_to_int,
+    str_to_float,
     str_to_bool,
     str_to_list,
     str_to_daterange,
@@ -85,7 +86,7 @@ class CourseSpider(LoginedSpider):
         classes = {}
         # one class one attribute
         attributes = [('CRN', None), ('Section', None),
-                      ('Credit', str_to_int), ('Campus', None),
+                      ('Credit', str_to_float), ('Campus', None),
                       ('WEB', str_to_bool), ('Level', None),
                       ('Avail', str_to_int), ('Cap', str_to_int),
                       ('Waitlist_Avail', str_to_bool)]

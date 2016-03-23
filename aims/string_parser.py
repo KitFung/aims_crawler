@@ -7,6 +7,12 @@ def str_to_int(string):
     return int(string)
 
 
+def str_to_float(string):
+    if not string or string == 'FULL':
+        return 0
+    return float(string)
+
+
 def str_to_bool(string):
     if string == 'Y':
         return True
